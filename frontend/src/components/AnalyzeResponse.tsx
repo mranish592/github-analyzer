@@ -6,6 +6,7 @@ import {
     CardTitle,
   } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { JsonResponseViewer } from "./JsonResponseViewer"
 
 export function AnalyzeResponse({ response, show } : { response: string, show: boolean }) {
     if(!show) return <></>
@@ -19,7 +20,8 @@ export function AnalyzeResponse({ response, show } : { response: string, show: b
             <CardDescription>
                 Analysis
             </CardDescription>
-            <p>{response}</p>
+            <JsonResponseViewer response={response} />
+            {/* <p>{response}</p> */}
             </CardContent>
         </Card>
       </div>
