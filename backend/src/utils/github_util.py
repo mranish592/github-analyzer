@@ -24,11 +24,7 @@ class GithubUtil:
 
     def get_repositories_for_user(self, user: Union[NamedUser, AuthenticatedUser]):
         repos = user.get_repos()
-        languages = [repo.get_languages() for repo in repos]
-        for lang in languages:
-            print(lang)
-        # Return a list of full names of repositories
-        return [repo.full_name for repo in repos]
+        return [Config.GITHUB_REPO_BASE_URL + repo.full_name for repo in repos]
 
     def close(self):
         self.github.close()
