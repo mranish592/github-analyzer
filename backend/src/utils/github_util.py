@@ -17,10 +17,11 @@ class GithubUtil:
     
     def get_repositories_for_username(self, username: str):
         user = self.github.get_user(username)
-        print(type(user))
         repos = user.get_repos()
+        # for repo in repos:
+        #     repo.get_git_tree()
         # Return a list of full names of repositories
-        return [repo.full_name for repo in repos]
+        return [Config.GITHUB_REPO_BASE_URL + repo.full_name for repo in repos]
 
     def get_repositories_for_user(self, user: Union[NamedUser, AuthenticatedUser]):
         repos = user.get_repos()

@@ -47,15 +47,17 @@ export function UsernameForm({ show, setShow, setReponse }: { show: boolean, set
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="w-1/3 space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="w-1/2 space-y-6">
         <FormField
           control={form.control}
           name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Username</FormLabel>
+              <FormLabel className="">Username</FormLabel>
               <FormControl>
+                <div  className="w-1/2">
                 <Input placeholder="https://github.com/torvalds" {...field} />
+                </div>
               </FormControl>
               <FormDescription>
                 Enter a GitHub username or link to analyze their profile.

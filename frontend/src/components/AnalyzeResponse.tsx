@@ -11,7 +11,7 @@ import { JsonResponseViewer } from "./JsonResponseViewer"
 export function AnalyzeResponse({ response, show } : { response: string, show: boolean }) {
     if(!show) return <></>
     return (
-        <div className={cn("mt-12 w-1/3")}>
+        <div className={cn("mt-12 w-1/2")}>
         <Card>
             <CardHeader>
             <CardTitle>Analysis Results</CardTitle>
