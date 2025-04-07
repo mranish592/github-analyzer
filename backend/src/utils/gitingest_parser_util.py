@@ -1,16 +1,9 @@
 from dataclasses import dataclass
 from typing import Optional
 from utils.gitingest_util import git_ingest_util
+from core.models import ParsedFile
 
 import asyncio
-
-@dataclass
-class ParsedFile:
-    file_name: str
-    file_extension: str
-    line_count: int
-    char_count: int
-    language: Optional[str] = None
 
 
 class GitIngestParserUtil: 
@@ -18,10 +11,10 @@ class GitIngestParserUtil:
         pass
     
 
-    def parse(self, input) -> list[ParsedFile]:
+    def parse(self, input) -> dict[str, ParsedFile]:
         files_split = input.lstrip().split("================================================\n")[1:]
         total_files = len(files_split) // 2
-        files = []
+        files = {}
         for index in range(total_files):
             file_name = files_split[index * 2].split("File: ")[1].strip()
             file_extension = file_name.split(".")[-1]
@@ -29,7 +22,7 @@ class GitIngestParserUtil:
             line_count = file_content.count("\n")
             char_count = len(file_content)
             language = extension_to_language.get(file_extension, None)
-            files.append(ParsedFile(file_name, file_extension, line_count, char_count, language))
+            files.update({file_name: ParsedFile(file_name, file_extension, line_count, char_count, language, file_content)})
         return files
 
 

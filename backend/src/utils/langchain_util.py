@@ -1,15 +1,32 @@
 import asyncio
 import json
+from time import sleep
 from core.models import Repo
+
 from langchain_text_splitters import Language
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
-from langchain.chains import LLMChain
+from langchain.chains.sequential import SequentialChain
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
-
+from utils.gitingest_parser_util import gitingest_parser_util
+from utils.gitingest_util import git_ingest_util
 from config import Config
+
+class FileContent(BaseModel):
+    """Represents the content of a file."""
+    filename: str = Field(description="The name of the file.")
+    content: str = Field(description="The full content of the file.")
+
+class FileList(BaseModel):
+            files: list[str] = Field(description="List of file paths")
+
+class LanguageFrameworkOutput(BaseModel):
+    """Represents the identified languages and frameworks."""
+    languages: list[str] = Field(description="List of programming languages used.")
+    frameworks: list[str] = Field(description="List of frameworks used.")
+
 
 class FileStructureAnalysis(BaseModel):
     languages: list[str] = Field(..., title="Languages", description="The languages of the codebase")
@@ -25,39 +42,61 @@ class LangchainUtil:
         self.output_parser = PydanticOutputParser(pydantic_object=FileStructureAnalysis)        
     
     async def get_languages_and_frameworks(self, repo: Repo) -> tuple[list[str], list[str]]:
-        system_prompt = """
-            Based on the file structure and content, provide insights on the codebase.
-            If you're not sure about the framework, don't mention it. Do not halucinate.
-            If you require more files in order to correctly identify the framworks and languages, please mention the files required with their full path.
-            Always ask for additional files, as they are needed more often than not. Limiting the number of files you ask for to 5.
-            Make sure you ask for enough files to be sure.
-            You give out responses in a json format with two json arrays: languages, frameworks and files_required.
-            Like below: 
-            {{
-                "languages": ["Python", "JavaScript"],
-                "frameworks": ["Django", "React"],
-                "files_required": ["backend/requirements.txt", "frontend/packange.json"]
-            }}
-        """
-        input_prompt_base = """
-        Based on the file structure and content, what languages and frameworks are used in this codebase?
-        Tell me any files you reuqire further for analysis.\n\n
-        """
-        human = "{text}"
-        prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("human", human)])
-        chain = prompt | self.chat
-        file_structure = repo.file_structure
-        input_prompt = input_prompt_base + file_structure
-        response = await chain.ainvoke({"text" : input_prompt})
-        print(response)
-        response_json = json.loads(response.content)
-        languages = response_json["languages"]
-        frameworks = response_json["frameworks"]
-        files_required = response_json["files_required"]
-        print("LangchainUtil :: Languages: ", languages, "Frameworks: ", frameworks, "Files Required: ", files_required)
-        return (response_json["languages"], response_json["frameworks"])
+        file_structure_prompt = PromptTemplate(
+            input_variables=["file_structure"],
+            template="""Given the following file structure: {file_structure}. 
+            Please identify the files most critical for determining the languages and frameworks used in the project.
+            Limit the number of files to 2. Do not ask for files which might be very large.
+            Return a JSON object with a "files" key containing an array of filenames relative to the base directory. Do not include any explanation.
+            """,
+        )
+        # Example format: {{"files": ["path/to/file1", "path/to/file2"]}}
+        file_content_parser = PydanticOutputParser(pydantic_object=FileList)
+        file_content_chain = file_structure_prompt | self.chat | file_content_parser
+        language_framework_prompt = PromptTemplate(
+            input_variables=["file_contents"],
+            template="""Given the following file contents:
+            {file_contents} 
+            and file structure: 
+            {file_structure}
+            Identify the programming languages, frameworks. Output the languages, frameworks in a structured format.
+            Include all major development frameworks, Do not include build frameworks, only include major frameworks. 
+            {format_instructions}
+            """,
+            partial_variables={"format_instructions": PydanticOutputParser(pydantic_object=LanguageFrameworkOutput).get_format_instructions()},
+        )
+
+        language_framework_parser = PydanticOutputParser(pydantic_object=LanguageFrameworkOutput)
+        language_framework_chain = language_framework_prompt | self.chat | language_framework_parser
+
+        file_structure: str | None = repo.file_structure
+        # print("file_structure", file_structure)        
+        file_list = file_content_chain.invoke({"file_structure": file_structure})
+        # print("file_list", file_list)
+        # print("Available files:", list(repo.parsed_files.keys()))
+
+        file_contents = []
+        for file_name in file_list.files:
+            file = repo.parsed_files.get(file_name)
+            if file is None:
+                continue
+            # Limit to first 2500 characters per file
+            file_content = file.content[:1000] + "..." if len(file.content) > 1000 else file.content
+            file_contents.append(f"fileName:{file_name}\nfileContent:\n{file_content}")
+        languages_frameworks = language_framework_chain.invoke({"file_contents": file_contents, "file_structure": file_structure})
+        print("repo", repo.url, "languages_frameworks", languages_frameworks)
+        return [languages_frameworks.languages, languages_frameworks.frameworks]
 
 langchain_util = LangchainUtil()
-# repo_url = "https://github.com/mranish592/simple-drive"
-# response = asyncio.run(langchain_util.get_languages_and_frameworks(repo_url))
-# print(response)
+# async def main():
+#     repo_url = "https://github.com/mranish592/simple-drive"
+#     summary, tree, content = await git_ingest_util.get_file_structure_and_content(repo_url)
+#     print("ingested", repo_url)
+#     repo = Repo(url=repo_url)
+#     repo.file_structure = tree
+#     repo.parsed_files = gitingest_parser_util.parse(content)
+#     langchain_util = LangchainUtil()
+#     response = await langchain_util.get_languages_and_frameworks(repo)
+#     print(response)
+
+# asyncio.run(main())
