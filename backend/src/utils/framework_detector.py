@@ -190,7 +190,7 @@ class FileInfoFrameworkDetector:
         "Vue": ["vue", "vue-router", "vuex", "vuetify", "@vue/"],
         "Angular": ["@angular/", "angular", "ng-"],
         "Next.js": ["next", "next/router", "next/link", "next/image"],
-        "Express": ["express", "express-session", "body-parser"],
+        "Express": ["express", "express-session", "body-parser", "import express from 'express';", "express from"],
         "NestJS": ["@nestjs/"],
         "jQuery": ["jquery", "$"],
         "D3.js": ["d3"],
@@ -213,8 +213,6 @@ class FileInfoFrameworkDetector:
         "Hibernate": ["org.hibernate", "javax.persistence", "jakarta.persistence"],
         "JUnit": ["org.junit", "junit."],
         "Mockito": ["org.mockito", "mockito"],
-        "Jackson": ["com.fasterxml.jackson"],
-        "Gson": ["com.google.gson"],
         
         # Go
         "Gin": ["github.com/gin-gonic/gin", "gin"],

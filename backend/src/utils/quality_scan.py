@@ -44,8 +44,7 @@ class QualityScan:
         metrics = [
             "bugs", "vulnerabilities", "code_smells",
             "reliability_rating", "security_rating", "sqale_rating",
-            "coverage", "duplicated_lines_density", "ncloc",
-            "complexity", "cognitive_complexity"
+            "coverage", "duplicated_lines_density","complexity" 
         ]
 
         params = {
@@ -71,7 +70,7 @@ class QualityScan:
             if file_path in excluded_files:
                 continue
 
-            file_quality_metrics = FileQualityMetrics(file_path, None, None, None, None, None, None, None, None, None, None, None)
+            file_quality_metrics = FileQualityMetrics(file_path, None, None, None, None, None, None, None, None, None)
             # Extract metrics for this file
             for measure in component.get("measures", []):
                 if measure["metric"] == "bugs":
@@ -84,16 +83,12 @@ class QualityScan:
                     file_quality_metrics.duplicated_lines_density = measure["value"]
                 elif measure["metric"] == "coverage":
                     file_quality_metrics.coverage = measure["value"]
-                elif measure["metric"] == "ncloc":
-                    file_quality_metrics.ncloc = measure["value"]
+                elif measure["metric"] == "sqale_rating":
+                    file_quality_metrics.maintainability_rating = measure["value"]
                 elif measure["metric"] == "reliability_rating":
                     file_quality_metrics.reliability_rating = measure["value"]
                 elif measure["metric"] == "security_rating":
                     file_quality_metrics.security_rating = measure["value"]
-                elif measure["metric"] == "sqale_rating":
-                    file_quality_metrics.sqale_rating = measure["value"]
-                elif measure["metric"] == "cognitive_complexity":
-                    file_quality_metrics.cognitive_complexity = measure["value"]
                 elif measure["metric"] == "complexity":
                     file_quality_metrics.complexity = measure["value"]
                                         
@@ -102,24 +97,3 @@ class QualityScan:
         return file_metrics
 
 quality_scan = QualityScan()
-    
-if __name__ == "__main__":
-    repo_path = "/Users/anish/projects/github-analyzer/backend/local_repo_dir"
-    temp_repo_dir_path = "local_repo_dir/"
-    # commit_hash = "884e4d8d9ededb3b6421594d01d1105808fa81a9"
-    commit_hash = "d22cc2475a6d7b35d272bc2b40979ef11e055ed9"    
-
-    commit_data = local_git_util.get_commit_details(repo_path, commit_hash)
-    modified_files = [file.path for file in commit_data.files]
-
-    result, error = quality_scan.analyze_commit_files(repo_path, commit_hash, modified_files)
-    if error:
-        print(error)
-    else:
-        print("Sonar scan completed successfully")
-        file_metrics = quality_scan.get_quality_metrics_for_files(repo_path, temp_repo_dir_path, commit_hash, modified_files)
-        print(file_metrics)
-    
-    # file_metrics = get_quality_metrics_for_files(repo_path, temp_repo_dir_path, commit_hash, modified_files)
-    # print(file_metrics)
-    print(modified_files)

@@ -2,7 +2,7 @@ import uuid
 import threading
 from dataclasses import dataclass
 from typing import Optional
-from core.models import AnalysisStatus, CommitExperienceMetrics, ExperienceMetrics, QualityMetrics
+from core.models import AnalysisStatus, CommitExperienceMetrics, ExperienceMetrics, OverallExperienceMetrics, OverallQualityMetrics, QualityMetrics
 from db import db
 from utils.framework_detector import framework_detector
 from utils.metrics_util import metrics_util
@@ -30,10 +30,10 @@ class AnalysisService:
         print('submitting analysis for', username, 'with id', analysis_id)
         user = github_util.get_user(username)
         print('user', user)
-        
+        name = user.name if user.name is not None else username
         self.submissions[analysis_id] = Submission(
             username=username,
-            name=user.name,
+            name=name,
             skip_quality_metrics=skip_quality_metrics,
             status=AnalysisStatus(total_commits=0, analyzed_commits=0, analysis_completed=False)
         )
@@ -46,7 +46,7 @@ class AnalysisService:
         thread.daemon = True
         thread.start()
         print('analysis submitted for', username, 'with id', analysis_id)
-        return analysis_id, user.name
+        return analysis_id, name
     
     def _run_analysis(self, analysis_id: str, username: str, skip_quality_metrics: bool):
         try:
@@ -67,7 +67,7 @@ class AnalysisService:
         submission = self.submissions[analysis_id]
         return submission
 
-    def analyze(self, analysis_id: str, username: str, skip_quality_metrics: bool = False) -> tuple[ExperienceMetrics | None, QualityMetrics | None]:
+    def analyze(self, analysis_id: str, username: str, skip_quality_metrics: bool = False) -> tuple[OverallExperienceMetrics | None, OverallQualityMetrics | None]:
         repos = github_util.get_commits_for_user(username)
         print('len(repos)', len(repos))
         
@@ -83,7 +83,12 @@ class AnalysisService:
         
         for repo in repos: 
             repo_path = local_git_util.clone_repo(repo.url)
+            if repo_path is None:
+                print('failed to clone repo', repo.url)
+                continue
             for commit in repo.commits:
+                analyzed_commits += 1
+                self.submissions[analysis_id].status.analyzed_commits = analyzed_commits
                 commit_experience_metrics = db.find_commit_experience_metrics(repo.url, commit.hash)
                 commit_quality_metrics = db.find_commit_quality_metrics(repo.url, commit.hash)
                 if commit_experience_metrics is not None and commit_quality_metrics is not None:
@@ -92,21 +97,19 @@ class AnalysisService:
                     print('repo', repo.url, 'commit', commit.hash, commit_quality_metrics)
                     experience_metrics.update({commit.hash: commit_experience_metrics})
                     quality_metrics.update({commit.hash: commit_quality_metrics})
-                    analyzed_commits += 1
-                    self.submissions[analysis_id].status.analyzed_commits = analyzed_commits
                     continue
                 
                 local_git_util.checkout_commit(repo_path, commit.hash)
                 commit_details = local_git_util.get_commit_details(repo_path, commit.hash, commit)
+                if commit_details is None:
+                    print('failed to get commit details for commit', commit.hash)
+                    continue
                 # print('\n\n',commit_details, '\n\n')
                 commit_details, languages, frameworks = skills_util.identify_skills(commit_details)
                 all_languages.update(languages)
                 all_frameworks.update(frameworks)
                     
                 if len(languages) == 0:
-                    # print('no languages found for commit, not analyzing', commit.hash)
-                    analyzed_commits += 1
-                    self.submissions[analysis_id].status.analyzed_commits = analyzed_commits
                     continue
 
                 excluded_files = skills_util.identify_excluded_files(commit_details)
@@ -119,10 +122,8 @@ class AnalysisService:
                     commit_quality_metrics = metrics_util.get_quality_metrics(commit_details, excluded_files, repo_path)
                     quality_metrics.update({commit.hash: commit_quality_metrics})
                     print('repo', repo.url, 'commit', commit.hash, commit_quality_metrics)
-                    db.save_commit_quality_metrics(repo.url, commit.hash, commit_quality_metrics)
-                
-                analyzed_commits += 1
-                self.submissions[analysis_id].status.analyzed_commits = analyzed_commits
+                    if commit_quality_metrics is not None:
+                        db.save_commit_quality_metrics(repo.url, commit.hash, commit_quality_metrics)
 
             local_git_util.delete_repo(repo_path)
 

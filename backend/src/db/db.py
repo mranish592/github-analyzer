@@ -14,7 +14,7 @@ class MongoDB:
         self.commit_quality_metrics = self.db["commit_quality_metrics"]
     
     # Experience Metrics Functions
-    def find_commit_experience_metrics(self, commit_hash: str, repo_url: str) -> Optional[CommitExperienceMetrics]:
+    def find_commit_experience_metrics(self, repo_url: str, commit_hash: str) -> Optional[CommitExperienceMetrics]:
         """Find commit experience metrics by commit hash and repo URL."""
         result = self.commit_experience_metrics.find_one({
             "commit_hash": commit_hash,
@@ -25,13 +25,15 @@ class MongoDB:
             return None
             
         return CommitExperienceMetrics(
-            lines_of_code=result["lines_of_code"],
-            timestamp=result["timestamp"]
+            skills=set(result.get("skills", [])),
+            lines_of_code=result.get("lines_of_code", {}),
+            timestamp=result["timestamp"],
+            repo_url=result["repo_url"]
         )
     
     def save_commit_experience_metrics(self, 
-                                      commit_hash: str, 
                                       repo_url: str, 
+                                      commit_hash: str, 
                                       metrics: CommitExperienceMetrics) -> str:
         """Save commit experience metrics. If exists, update it."""
         existing = self.commit_experience_metrics.find_one({
@@ -42,6 +44,7 @@ class MongoDB:
         data = {
             "commit_hash": commit_hash,
             "repo_url": repo_url,
+            "skills": list(metrics.skills),  # Convert set to list for MongoDB
             "lines_of_code": metrics.lines_of_code,
             "timestamp": metrics.timestamp,
             "updated_at": datetime.utcnow()
@@ -59,7 +62,7 @@ class MongoDB:
             return str(result.inserted_id)
     
     # Quality Metrics Functions
-    def find_commit_quality_metrics(self, commit_hash: str, repo_url: str) -> Optional[CommitQualityMetrics]:
+    def find_commit_quality_metrics(self, repo_url: str, commit_hash: str) -> Optional[CommitQualityMetrics]:
         """Find commit quality metrics by commit hash and repo URL."""
         result = self.commit_quality_metrics.find_one({
             "commit_hash": commit_hash,
@@ -71,22 +74,21 @@ class MongoDB:
             
         return CommitQualityMetrics(
             timestamp=result["timestamp"],
-            bugs=result["bugs"],
-            code_smells=result["code_smells"],
-            cognitive_complexity=result["cognitive_complexity"],
-            complexity=result["complexity"],
-            coverage=result["coverage"],
-            ncloc=result["ncloc"],
-            reliability_rating=result["reliability_rating"],
-            security_rating=result["security_rating"],
-            sqale_rating=result["sqale_rating"],
-            duplicated_lines_density=result["duplicated_lines_density"],
-            vulnerabilities=result["vulnerabilities"]
+            skills=set(result.get("skills", [])),
+            bugs=result.get("bugs", {}),
+            code_smells=result.get("code_smells", {}),
+            complexity=result.get("complexity", {}),
+            vulnerabilities=result.get("vulnerabilities", {}),
+            coverage=result.get("coverage", {}),
+            duplicated_lines_density=result.get("duplicated_lines_density", {}),
+            reliability_rating=result.get("reliability_rating", {}),
+            security_rating=result.get("security_rating", {}),
+            maintainability_rating=result.get("maintainability_rating", {})
         )
     
     def save_commit_quality_metrics(self, 
-                                   commit_hash: str, 
                                    repo_url: str, 
+                                   commit_hash: str, 
                                    metrics: CommitQualityMetrics) -> str:
         """Save commit quality metrics. If exists, update it."""
         existing = self.commit_quality_metrics.find_one({
@@ -98,17 +100,16 @@ class MongoDB:
             "commit_hash": commit_hash,
             "repo_url": repo_url,
             "timestamp": metrics.timestamp,
+            "skills": list(metrics.skills),  # Convert set to list for MongoDB
             "bugs": metrics.bugs,
             "code_smells": metrics.code_smells,
-            "cognitive_complexity": metrics.cognitive_complexity,
             "complexity": metrics.complexity,
+            "vulnerabilities": metrics.vulnerabilities,
             "coverage": metrics.coverage,
-            "ncloc": metrics.ncloc,
+            "duplicated_lines_density": metrics.duplicated_lines_density,
             "reliability_rating": metrics.reliability_rating,
             "security_rating": metrics.security_rating,
-            "sqale_rating": metrics.sqale_rating,
-            "duplicated_lines_density": metrics.duplicated_lines_density,
-            "vulnerabilities": metrics.vulnerabilities,
+            "maintainability_rating": metrics.maintainability_rating,
             "updated_at": datetime.utcnow()
         }
         

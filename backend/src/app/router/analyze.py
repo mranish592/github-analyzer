@@ -11,8 +11,8 @@ router = APIRouter()
 async def analyze(username: str, skip_quality_metrics: bool = False) -> AnalyzeResponse:
     """Fetches user data from the GitHub API."""
     user = github_util.get_user(username)
-    name = user.name
-    experience_metrics, quality_metrics = analysis_service.analyze(username, skip_quality_metrics)
+    name = user.name if user.name is not None else username
+    experience_metrics, quality_metrics = analysis_service.analyze('', username, skip_quality_metrics)
     response = AnalyzeResponse(username=username, name=name, message="Analyzed user", experience_metrics=experience_metrics, quality_metrics=quality_metrics)
     return response
 
