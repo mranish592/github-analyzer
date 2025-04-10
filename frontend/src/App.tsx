@@ -1,12 +1,10 @@
-import { useState } from 'react';
+// import { useState } from 'react';
 import './App.css'
-import { UsernameForm } from './components/UsernameForm'
-import { AnalyzeResponse } from './components/AnalyzeResponse';
 import GitHubAnalyzer from './components/GithubAnalyzer';
 function App() {
 
-  const [show, setShow] = useState(false);
-  const [response, setResponse] = useState("");
+  // const [show, setShow] = useState(false);
+  // const [response, setResponse] = useState("");
 
   return (
     <>

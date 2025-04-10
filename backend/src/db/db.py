@@ -12,13 +12,16 @@ class MongoDB:
         # Collections
         self.commit_experience_metrics = self.db["commit_experience_metrics"]
         self.commit_quality_metrics = self.db["commit_quality_metrics"]
+        
+        # Create indexes
+        self.commit_experience_metrics.create_index("commit_hash")
+        self.commit_quality_metrics.create_index("commit_hash")
     
     # Experience Metrics Functions
-    def find_commit_experience_metrics(self, repo_url: str, commit_hash: str) -> Optional[CommitExperienceMetrics]:
-        """Find commit experience metrics by commit hash and repo URL."""
+    def find_commit_experience_metrics(self, commit_hash: str) -> Optional[CommitExperienceMetrics]:
+        """Find commit experience metrics by commit hash."""
         result = self.commit_experience_metrics.find_one({
-            "commit_hash": commit_hash,
-            "repo_url": repo_url
+            "commit_hash": commit_hash
         })
         
         if not result:
@@ -37,8 +40,7 @@ class MongoDB:
                                       metrics: CommitExperienceMetrics) -> str:
         """Save commit experience metrics. If exists, update it."""
         existing = self.commit_experience_metrics.find_one({
-            "commit_hash": commit_hash,
-            "repo_url": repo_url
+            "commit_hash": commit_hash
         })
         
         data = {
@@ -62,11 +64,10 @@ class MongoDB:
             return str(result.inserted_id)
     
     # Quality Metrics Functions
-    def find_commit_quality_metrics(self, repo_url: str, commit_hash: str) -> Optional[CommitQualityMetrics]:
-        """Find commit quality metrics by commit hash and repo URL."""
+    def find_commit_quality_metrics(self, commit_hash: str) -> Optional[CommitQualityMetrics]:
+        """Find commit quality metrics by commit hash."""
         result = self.commit_quality_metrics.find_one({
-            "commit_hash": commit_hash,
-            "repo_url": repo_url
+            "commit_hash": commit_hash
         })
         
         if not result:
@@ -92,8 +93,7 @@ class MongoDB:
                                    metrics: CommitQualityMetrics) -> str:
         """Save commit quality metrics. If exists, update it."""
         existing = self.commit_quality_metrics.find_one({
-            "commit_hash": commit_hash,
-            "repo_url": repo_url
+            "commit_hash": commit_hash
         })
         
         data = {

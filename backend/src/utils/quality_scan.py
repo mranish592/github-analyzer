@@ -1,6 +1,7 @@
 import subprocess
 import os
 import tempfile
+import config
 from core.models import FileQualityMetrics
 import requests
 from config import Config
@@ -14,19 +15,31 @@ class QualityScan:
     def analyze_commit_files(self, commit_hash, repo_path):
 
         # Create a temp directory for the files
-        
-        cmd = [
-            "sonar-scanner",
-            f'-Dsonar.projectKey=commit_{commit_hash}',
-            f'-Dsonar.projectName=Commit Analysis {commit_hash}',
-            f'-Dsonar.projectVersion=1.0', # Identify analysis by commit
-            f'-Dsonar.sources={repo_path}', # Scan current directory (the temp dir)
-            f'-Dsonar.host.url={Config.SONARQUBE_URL}',
-            f'-Dsonar.token={Config.SONARQUBE_TOKEN}',
-            # f'-Dsonar.inclusions={inclusions}',
-            f'-Dsonar.sourceEncoding=UTF-8',
-            f'-Dsonar.scm.disabled=true' # Good practice for this workflow
-        ]
+        if Config.SONAR_CLOUD_TOKEN is not None and Config.SONAR_CLOUD_TOKEN != "":
+            cmd = [
+                "sonar-scanner",
+                f'-Dsonar.projectKey=commit_{commit_hash}',
+                f'-Dsonar.projectName=Commit Analysis {commit_hash}',
+                f'-Dsonar.projectVersion=1.0', # Identify analysis by commit
+                f'-Dsonar.sources={repo_path}', # Scan current directory (the temp dir)
+                f'-Dsonar.organization={Config.SONAR_CLOUD_ORGANIZATION}',
+                f'-Dsonar.token={Config.SONAR_CLOUD_TOKEN}',
+                f'-Dsonar.login={Config.SONAR_CLOUD_TOKEN}',
+            ]
+        else:
+            cmd = [
+                "sonar-scanner",
+                f'-Dsonar.projectKey=commit_{commit_hash}',
+                f'-Dsonar.projectName=Commit Analysis {commit_hash}',
+                f'-Dsonar.projectVersion=1.0', # Identify analysis by commit
+                f'-Dsonar.sources={repo_path}', # Scan current directory (the temp dir)
+                f'-Dsonar.host.url={Config.SONARQUBE_URL}',
+                f'-Dsonar.token={Config.SONARQUBE_TOKEN}',
+                # f'-Dsonar.inclusions={inclusions}',
+                f'-Dsonar.sourceEncoding=UTF-8',
+                f'-Dsonar.scm.disabled=true' # Good practice for this workflow
+            ]
+
         
         # Run SonarScanner
         result = subprocess.run(
@@ -54,8 +67,12 @@ class QualityScan:
             "strategy": "leaves",
             "ps": 500
         }
-
-        response = requests.get(url,  params=params, headers={"Authorization": f"Bearer {Config.SONARQUBE_USER_TOKEN}"})
+        headers = {}
+        if Config.SONAR_CLOUD_TOKEN is not None and Config.SONAR_CLOUD_TOKEN != "":
+            headers["Authorization"] = f"Bearer {Config.SONAR_CLOUD_TOKEN}"
+        else:
+            headers["Authorization"] = f"Bearer {Config.SONARQUBE_USER_TOKEN}"
+        response = requests.get(url,  params=params, headers=headers)
         if response.status_code != 200:
             raise Exception(f"API request failed: {response.text}")
         result = response.json()

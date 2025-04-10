@@ -51,11 +51,11 @@ interface AnalyzeResponse {
   quality_metrics: OverallQualityMetrics | null;
 }
 
-interface SubmitAnalysisResponse {
-  username: string;
-  analysis_id: string;
-  name: string;
-}
+// interface SubmitAnalysisResponse {
+//   username: string;
+//   analysis_id: string;
+//   name: string;
+// }
 
 interface StatusResponse {
   analysis_id: string;
@@ -68,8 +68,9 @@ export default function GitHubAnalyzer() {
   const [username, setUsername] = useState<string>('');
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
-  const [analysisId, setAnalysisId] = useState<string | null>(null);
+  const [_, setAnalysisId] = useState<string | null>(null);
   const [analysisData, setAnalysisData] = useState<AnalyzeResponse | null>(null);
+  const [statusResponse, setStatusResponse] = useState<StatusResponse | null>(null);
   
   // Convert backend data to UI format for experience tab
   const experienceData = React.useMemo(() => {
@@ -124,8 +125,9 @@ export default function GitHubAnalyzer() {
   // Poll for analysis status
   const pollStatus = async (id: string) => {
     try {
-      const statusResponse = await getAnalysisStatus(id);
-      const { status } = statusResponse;
+      const response = await getAnalysisStatus(id);
+      setStatusResponse(response);
+      const { status } = response;
       
       if (status.total_commits > 0) {
         const newProgress = Math.floor((status.analyzed_commits / status.total_commits) * 100);
@@ -207,7 +209,15 @@ export default function GitHubAnalyzer() {
       
       {isScanning && (
         <div className="mb-6">
-          <p className="text-sm text-gray-500 mb-2">Scanning in progress...</p>
+          <div className="flex justify-between mb-2">
+            <p className="text-sm text-gray-500">Scanning in progress...</p>
+            <p className="text-sm text-gray-500">
+              {statusResponse?.status?.total_commits ? 
+                `${statusResponse.status.analyzed_commits || 0}/${statusResponse.status.total_commits} commits` : 
+                'Initializing...'
+              }
+            </p>
+          </div>
           <Progress value={progress} className="h-2" />
         </div>
       )}

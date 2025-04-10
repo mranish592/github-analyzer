@@ -89,8 +89,8 @@ class AnalysisService:
             for commit in repo.commits:
                 analyzed_commits += 1
                 self.submissions[analysis_id].status.analyzed_commits = analyzed_commits
-                commit_experience_metrics = db.find_commit_experience_metrics(repo.url, commit.hash)
-                commit_quality_metrics = db.find_commit_quality_metrics(repo.url, commit.hash)
+                commit_experience_metrics = db.find_commit_experience_metrics(commit.hash)
+                commit_quality_metrics = db.find_commit_quality_metrics(commit.hash)
                 if commit_experience_metrics is not None and commit_quality_metrics is not None:
                     print('found exisiting metrics for commit', commit.hash)
                     print('repo', repo.url, 'commit', commit.hash, 'lines_of_code', commit_experience_metrics.lines_of_code)

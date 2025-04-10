@@ -23,7 +23,7 @@ const FormSchema = z.object({
   }),
 })
 
-export function UsernameForm({ show, setShow, setReponse }: { show: boolean, setShow: (show: boolean) => void, setReponse: (response: string) => void }) {
+export function UsernameForm({ setShow, setReponse }: { show: boolean, setShow: (show: boolean) => void, setReponse: (response: string) => void }) {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
