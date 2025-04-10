@@ -105,7 +105,10 @@ class AnalysisService:
                     
                 if len(languages) == 0:
                     # print('no languages found for commit, not analyzing', commit.hash)
+                    analyzed_commits += 1
+                    self.submissions[analysis_id].status.analyzed_commits = analyzed_commits
                     continue
+
                 excluded_files = skills_util.identify_excluded_files(commit_details)
                 # print('excluded_files', excluded_files)
                 commit_experience_metrics = metrics_util.get_experience_metrics(commit_details, excluded_files)

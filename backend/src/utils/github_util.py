@@ -41,11 +41,11 @@ class GithubUtil:
         for commit in commits:
             # skip merge commits, merge commits have more than 1 parent
             if(len(commit._parents.value) > 1):
-                print('skipping merge commit', commit.sha, commit.commit.message, 'parents', commit._parents.value, len(commit._parents.value))
+                # print('skipping merge commit', commit.sha, commit.commit.message, 'parents', commit._parents.value, len(commit._parents.value))
                 continue
             # print(commit.commit.message, commit.repository.url, commit.sha)
-            if(commit.repository.full_name != "mranish592/simple-drive"):
-                continue
+            # if(commit.repository.full_name != "mranish592/simple-drive"):
+                # continue
             # count += 1
             # if count > 3:
             #     break
@@ -75,18 +75,7 @@ class GithubUtil:
         
     def close(self):
         self.github.close()
-    def get_language(self, file_extension: str) -> str:
-        language_mapping = {
-            "py": "Python",
-            "js": "JavaScript",
-            "ts": "TypeScript",
-            "java": "Java",
-            "cpp": "C++",
-            "html": "HTML",
-            "css": "CSS",
-            "kt": "Kotlin",
-        }
-        return language_mapping.get(file_extension, None)
+        
 github_util = GithubUtil()
 
 # Example usage:
