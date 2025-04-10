@@ -1,6 +1,7 @@
 from config import Config
 from core.models import CommitDetails, CommitExperienceMetrics, CommitQualityMetrics, ExperienceMetrics, QualityMetrics
 from utils.quality_scan import quality_scan
+import datetime
 
 
 class MetricsUtil:
@@ -57,6 +58,8 @@ class MetricsUtil:
                 continue
             language = file_info.language
             frameworks = file_info.frameworks
+            # all the metrics which is a float value, we need to take average of them. For all the metrics which is an int value, we need to take sum of them.
+            
             if language not in commit_quality_metrics.bugs and file_quality_metrics.bugs is not None:
                 commit_quality_metrics.bugs[language] = 0
             if language not in commit_quality_metrics.code_smells and file_quality_metrics.code_smells is not None:
@@ -108,6 +111,11 @@ class MetricsUtil:
         print(len(experience_metrics))
         for commit_hash, commit_experience_metrics in experience_metrics.items():
             timestamp = commit_experience_metrics.timestamp
+            
+            # Convert to timezone-aware if it's naive
+            if timestamp.tzinfo is None:
+                timestamp = timestamp.replace(tzinfo=datetime.timezone.utc)
+            
             for language, lines_of_code in commit_experience_metrics.lines_of_code.items():
                 if language not in overall_experience_metrics.lines_of_code:
                     overall_experience_metrics.lines_of_code[language] = 0
@@ -117,6 +125,13 @@ class MetricsUtil:
                     overall_experience_metrics.first_commit_timestamp[language] = timestamp
                 if language not in overall_experience_metrics.last_commit_timestamp:
                     overall_experience_metrics.last_commit_timestamp[language] = timestamp
+                
+                # Make sure stored timestamps are timezone-aware before comparing
+                if overall_experience_metrics.first_commit_timestamp[language].tzinfo is None:
+                    overall_experience_metrics.first_commit_timestamp[language] = overall_experience_metrics.first_commit_timestamp[language].replace(tzinfo=datetime.timezone.utc)
+                if overall_experience_metrics.last_commit_timestamp[language].tzinfo is None:
+                    overall_experience_metrics.last_commit_timestamp[language] = overall_experience_metrics.last_commit_timestamp[language].replace(tzinfo=datetime.timezone.utc)
+                
                 if timestamp < overall_experience_metrics.first_commit_timestamp[language]:
                     overall_experience_metrics.first_commit_timestamp[language] = timestamp
                 if timestamp > overall_experience_metrics.last_commit_timestamp[language]:

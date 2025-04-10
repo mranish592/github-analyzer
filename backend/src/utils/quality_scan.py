@@ -51,6 +51,7 @@ class QualityScan:
         params = {
             "component": f"commit_{commit_hash}",
             "metricKeys": ",".join(metrics),
+            "qualifiers": "FIL",
             "strategy": "leaves",
             "ps": 500
         }

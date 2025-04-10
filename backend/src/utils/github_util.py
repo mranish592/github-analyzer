@@ -37,12 +37,12 @@ class GithubUtil:
         commits = self.github.search_commits(query=f"author:{username}")
         repos_details = dict[str, RepoDetails]()
         all_commits = list[CommitDetails]()
-        count = 0
+        # count = 0
         for commit in commits:
             # print(commit.commit.message, commit.repository.url, commit.sha)
-            if(commit.repository.full_name != "mranish592/simple-drive"):
-                continue
-            count += 1
+            # if(commit.repository.full_name != "mranish592/simple-drive"):
+            #     continue
+            # count += 1
             # if count > 3:
             #     break
             

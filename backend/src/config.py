@@ -11,3 +11,5 @@ class Config:
     SONARQUBE_TOKEN = os.getenv("SONARQUBE_TOKEN", "")
     SONARQUBE_USER_TOKEN = os.getenv("SONARQUBE_USER_TOKEN", "")
     BASE_DIR = os.getenv("BASE_DIR", "/Users/anish/projects/github-analyzer/backend/local_repo_dir/base")
+    MONGO_CONNECTION_STRING = os.getenv("MONGO_CONNECTION_STRING", "mongodb://localhost:27017")
+    MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "github_metrics")

@@ -1,4 +1,5 @@
 from core.models import CommitDetails, FileInfo
+from utils.framework_detector import framework_detector
 
 extension_to_language = {
     "py": "Python",
@@ -67,12 +68,25 @@ class SkillsUtil:
 
     def identify_language(self, file: FileInfo) -> str | None:
         extension = file.file_extension
-        return extension_to_language.get(extension, None)
+        return extension_to_language.get(extension.lower(), "Unknown")
     
-    def identify_skills(self, commit_details: CommitDetails) -> CommitDetails:
+    def identify_skills(self, commit_details: CommitDetails) -> tuple[CommitDetails, list[str], list[str]]:
+        languages = set[str]()
+        frameworks = set[str]()
         for file_path, file in commit_details.files.items():
             file.language = self.identify_language(file)
-        return commit_details
+            if file.language is not None and file.language != "Unknown":
+                languages.add(file.language)
+        
+
+        for file in commit_details.files.values():
+            detected_frameworks = framework_detector.process_file_info(file).frameworks
+            if len(detected_frameworks) > 0:
+                # print('commit', commit_details.hash, 'file', file.file_path, 'detected_frameworks', detected_frameworks)
+                frameworks.update(detected_frameworks)
+                file.frameworks = detected_frameworks
+
+        return commit_details, list(languages), list(frameworks)
     
     def identify_excluded_files(self, commit_details: CommitDetails) -> list[FileInfo]:
         return [file for _, file in commit_details.files.items() if file.language is None]
