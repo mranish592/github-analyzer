@@ -130,12 +130,25 @@ class AnalysisService:
             overall_quality_metrics = None
         print('all_languages', all_languages)
         print('all_frameworks', all_frameworks)
+        print('overall_experience_metrics', overall_experience_metrics)
+        print('overall_quality_metrics', overall_quality_metrics)
         return overall_experience_metrics, overall_quality_metrics
 
 
 analysis_service = AnalysisService()
 
 if __name__ == "__main__":
-    experience_metrics, quality_metrics = analysis_service.analyze("mranish592")
-    print(experience_metrics)
-    print(quality_metrics)
+    analysis_id, name = analysis_service.submit_analysis("mranish592", False)
+    print(f"Analysis ID: {analysis_id}")
+    print(f"Name: {name}")
+    
+    # Wait for analysis to complete
+    import time
+    while not analysis_service.get_status(analysis_id).analysis_completed:
+        print("Waiting for analysis to complete...")
+        time.sleep(5)
+    
+    # Get the results
+    result = analysis_service.get_analysis(analysis_id)
+    print("Experience metrics:", result.experience_metrics)
+    print("Quality metrics:", result.quality_metrics)

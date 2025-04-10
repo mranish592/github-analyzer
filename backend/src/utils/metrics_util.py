@@ -51,6 +51,10 @@ class MetricsUtil:
             duplicated_lines_density={},
             vulnerabilities={}
         )
+        
+        # Track file counts per language for calculating averages
+        file_counts = {}
+        
         for file_quality_metrics in code_quality_per_file:
             file_info = commit_details.files.get(file_quality_metrics.file_path)
             if file_info is None:
@@ -58,8 +62,13 @@ class MetricsUtil:
                 continue
             language = file_info.language
             frameworks = file_info.frameworks
-            # all the metrics which is a float value, we need to take average of them. For all the metrics which is an int value, we need to take sum of them.
             
+            # Initialize file count for this language
+            if language not in file_counts:
+                file_counts[language] = 0
+            file_counts[language] += 1
+            
+            # Initialize metrics dictionaries
             if language not in commit_quality_metrics.bugs and file_quality_metrics.bugs is not None:
                 commit_quality_metrics.bugs[language] = 0
             if language not in commit_quality_metrics.code_smells and file_quality_metrics.code_smells is not None:
@@ -67,7 +76,7 @@ class MetricsUtil:
             if language not in commit_quality_metrics.cognitive_complexity and file_quality_metrics.cognitive_complexity is not None:
                 commit_quality_metrics.cognitive_complexity[language] = 0
             if language not in commit_quality_metrics.complexity and file_quality_metrics.complexity is not None:
-                commit_quality_metrics.complexity[language] = 0.0
+                commit_quality_metrics.complexity[language] = 0
             if language not in commit_quality_metrics.coverage and file_quality_metrics.coverage is not None:
                 commit_quality_metrics.coverage[language] = 0.0
             if language not in commit_quality_metrics.ncloc and file_quality_metrics.ncloc is not None:
@@ -83,12 +92,13 @@ class MetricsUtil:
             if language not in commit_quality_metrics.vulnerabilities and file_quality_metrics.vulnerabilities is not None:
                 commit_quality_metrics.vulnerabilities[language] = 0
 
+            # Sum metrics
             if file_quality_metrics.bugs is not None:
                 commit_quality_metrics.bugs[language] += int(file_quality_metrics.bugs)
             if file_quality_metrics.code_smells is not None:
                 commit_quality_metrics.code_smells[language] += int(file_quality_metrics.code_smells)
             if file_quality_metrics.complexity is not None:
-                commit_quality_metrics.complexity[language] += float(file_quality_metrics.complexity)
+                commit_quality_metrics.complexity[language] += int(file_quality_metrics.complexity)
             if file_quality_metrics.coverage is not None:
                 commit_quality_metrics.coverage[language] += float(file_quality_metrics.coverage)
             if file_quality_metrics.ncloc is not None:
@@ -103,6 +113,20 @@ class MetricsUtil:
                 commit_quality_metrics.duplicated_lines_density[language] += float(file_quality_metrics.duplicated_lines_density)
             if file_quality_metrics.vulnerabilities is not None:
                 commit_quality_metrics.vulnerabilities[language] += int(file_quality_metrics.vulnerabilities)
+        
+        # Calculate averages for float metrics and round to 1 decimal place
+        for language, count in file_counts.items():
+            if count > 0:
+                if language in commit_quality_metrics.coverage:
+                    commit_quality_metrics.coverage[language] = round(commit_quality_metrics.coverage[language] / count, 1)
+                if language in commit_quality_metrics.reliability_rating:
+                    commit_quality_metrics.reliability_rating[language] = round(commit_quality_metrics.reliability_rating[language] / count, 1)
+                if language in commit_quality_metrics.security_rating:
+                    commit_quality_metrics.security_rating[language] = round(commit_quality_metrics.security_rating[language] / count, 1)
+                if language in commit_quality_metrics.sqale_rating:
+                    commit_quality_metrics.sqale_rating[language] = round(commit_quality_metrics.sqale_rating[language] / count, 1)
+                if language in commit_quality_metrics.duplicated_lines_density:
+                    commit_quality_metrics.duplicated_lines_density[language] = round(commit_quality_metrics.duplicated_lines_density[language] / count, 1)
             
         return commit_quality_metrics
 
@@ -152,62 +176,97 @@ class MetricsUtil:
             duplicated_lines_density={},
             vulnerabilities={}
         )
+        
+        # Track commit counts per language for calculating averages
+        commit_counts = {}
+        
         for commit_hash, commit_quality_metrics in quality_metrics.items():
+            # Process integer metrics (sum)
             for language, bugs in commit_quality_metrics.bugs.items():
                 if language not in overall_quality_metrics.bugs and bugs is not None:
                     overall_quality_metrics.bugs[language] = 0
                 if bugs is not None:
                     overall_quality_metrics.bugs[language] += bugs
+                
             for language, code_smells in commit_quality_metrics.code_smells.items():
                 if language not in overall_quality_metrics.code_smells and code_smells is not None:
                     overall_quality_metrics.code_smells[language] = 0
                 if code_smells is not None:
                     overall_quality_metrics.code_smells[language] += code_smells
+                
             for language, cognitive_complexity in commit_quality_metrics.cognitive_complexity.items():
                 if language not in overall_quality_metrics.cognitive_complexity and cognitive_complexity is not None:
                     overall_quality_metrics.cognitive_complexity[language] = 0
                 if cognitive_complexity is not None:
                     overall_quality_metrics.cognitive_complexity[language] += cognitive_complexity
+                
             for language, complexity in commit_quality_metrics.complexity.items():
                 if language not in overall_quality_metrics.complexity and complexity is not None:
-                    overall_quality_metrics.complexity[language] = 0.0
+                    overall_quality_metrics.complexity[language] = 0
                 if complexity is not None:
                     overall_quality_metrics.complexity[language] += complexity
-            for language, coverage in commit_quality_metrics.coverage.items():
-                if language not in overall_quality_metrics.coverage and coverage is not None:
-                    overall_quality_metrics.coverage[language] = 0.0
-                if coverage is not None:
-                    overall_quality_metrics.coverage[language] += coverage
+                
             for language, ncloc in commit_quality_metrics.ncloc.items():
                 if language not in overall_quality_metrics.ncloc and ncloc is not None:
                     overall_quality_metrics.ncloc[language] = 0
                 if ncloc is not None:
                     overall_quality_metrics.ncloc[language] += ncloc
-            for language, reliability_rating in commit_quality_metrics.reliability_rating.items():
-                if language not in overall_quality_metrics.reliability_rating and reliability_rating is not None:
-                    overall_quality_metrics.reliability_rating[language] = 0.0
-                if reliability_rating is not None:
-                    overall_quality_metrics.reliability_rating[language] += reliability_rating
-            for language, security_rating in commit_quality_metrics.security_rating.items():
-                if language not in overall_quality_metrics.security_rating and security_rating is not None:
-                    overall_quality_metrics.security_rating[language] = 0.0
-                if security_rating is not None:
-                    overall_quality_metrics.security_rating[language] += security_rating
-            for language, sqale_rating in commit_quality_metrics.sqale_rating.items():
-                if language not in overall_quality_metrics.sqale_rating and sqale_rating is not None:
-                    overall_quality_metrics.sqale_rating[language] = 0.0
-                if sqale_rating is not None:
-                    overall_quality_metrics.sqale_rating[language] += sqale_rating
-            for language, duplicated_lines_density in commit_quality_metrics.duplicated_lines_density.items():
-                if language not in overall_quality_metrics.duplicated_lines_density and duplicated_lines_density is not None:
-                    overall_quality_metrics.duplicated_lines_density[language] = 0.0
-                if duplicated_lines_density is not None:
-                    overall_quality_metrics.duplicated_lines_density[language] += duplicated_lines_density
+                
             for language, vulnerabilities in commit_quality_metrics.vulnerabilities.items():
                 if language not in overall_quality_metrics.vulnerabilities and vulnerabilities is not None:
                     overall_quality_metrics.vulnerabilities[language] = 0
                 if vulnerabilities is not None:
                     overall_quality_metrics.vulnerabilities[language] += vulnerabilities
+            
+            # Process float metrics (for averaging)
+            for language in commit_quality_metrics.coverage.keys():
+                if language not in commit_counts:
+                    commit_counts[language] = 0
+                commit_counts[language] += 1
+                
+                if language not in overall_quality_metrics.coverage:
+                    overall_quality_metrics.coverage[language] = 0.0
+                if commit_quality_metrics.coverage[language] is not None:
+                    overall_quality_metrics.coverage[language] += commit_quality_metrics.coverage[language]
+                
+            for language, reliability_rating in commit_quality_metrics.reliability_rating.items():
+                if language not in overall_quality_metrics.reliability_rating and reliability_rating is not None:
+                    overall_quality_metrics.reliability_rating[language] = 0.0
+                if reliability_rating is not None:
+                    overall_quality_metrics.reliability_rating[language] += reliability_rating
+                
+            for language, security_rating in commit_quality_metrics.security_rating.items():
+                if language not in overall_quality_metrics.security_rating and security_rating is not None:
+                    overall_quality_metrics.security_rating[language] = 0.0
+                if security_rating is not None:
+                    overall_quality_metrics.security_rating[language] += security_rating
+                
+            for language, sqale_rating in commit_quality_metrics.sqale_rating.items():
+                if language not in overall_quality_metrics.sqale_rating and sqale_rating is not None:
+                    overall_quality_metrics.sqale_rating[language] = 0.0
+                if sqale_rating is not None:
+                    overall_quality_metrics.sqale_rating[language] += sqale_rating
+                
+            for language, duplicated_lines_density in commit_quality_metrics.duplicated_lines_density.items():
+                if language not in overall_quality_metrics.duplicated_lines_density and duplicated_lines_density is not None:
+                    overall_quality_metrics.duplicated_lines_density[language] = 0.0
+                if duplicated_lines_density is not None:
+                    overall_quality_metrics.duplicated_lines_density[language] += duplicated_lines_density
+        
+        # Calculate averages for float metrics and round to 1 decimal place
+        for language, count in commit_counts.items():
+            if count > 0:
+                # For all float metrics, calculate the average and round to 1 decimal place
+                if language in overall_quality_metrics.coverage:
+                    overall_quality_metrics.coverage[language] = round(overall_quality_metrics.coverage[language] / count, 1)
+                if language in overall_quality_metrics.reliability_rating:
+                    overall_quality_metrics.reliability_rating[language] = round(overall_quality_metrics.reliability_rating[language] / count, 1)
+                if language in overall_quality_metrics.security_rating:
+                    overall_quality_metrics.security_rating[language] = round(overall_quality_metrics.security_rating[language] / count, 1)
+                if language in overall_quality_metrics.sqale_rating:
+                    overall_quality_metrics.sqale_rating[language] = round(overall_quality_metrics.sqale_rating[language] / count, 1)
+                if language in overall_quality_metrics.duplicated_lines_density:
+                    overall_quality_metrics.duplicated_lines_density[language] = round(overall_quality_metrics.duplicated_lines_density[language] / count, 1)
         
         return overall_quality_metrics
 
