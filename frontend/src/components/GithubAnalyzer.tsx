@@ -115,7 +115,8 @@ export default function GitHubAnalyzer() {
         duplicatedLinesDensity: metrics.duplicated_lines_density ? `${metrics.duplicated_lines_density}%` : 'N/A',
         vulnerabilityPerCommit: metrics.vulnerabilities_per_commit || 0,
         bugsPerCommit: metrics.bugs_per_commit || 0,
-        codeSmellsPerCommit: metrics.code_smells_per_commit || 0
+        codeSmellsPerCommit: metrics.code_smells_per_commit || 0,
+        complexityPerCommit: metrics.complexity_per_commit || 0
       };
     });
   }, [analysisData]);
@@ -289,6 +290,10 @@ export default function GitHubAnalyzer() {
                     <div>
                       <p className="text-sm text-gray-500">Code Smells per commit:</p>
                       <p className="font-medium">{item.codeSmellsPerCommit}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Complexity per commit:</p>
+                      <p className="font-medium">{item.complexityPerCommit}</p>
                     </div>
                   </div>
                 </div>
