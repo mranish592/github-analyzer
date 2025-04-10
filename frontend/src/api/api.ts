@@ -38,4 +38,25 @@ api.interceptors.response.use(
   }
 );
 
+// Add GitHub analyzer API functions
+export const analyzeGitHub = async (username: string, skipQualityMetrics: boolean = false) => {
+  const response = await api.get(`/analyze/${username}?skip_quality_metrics=${skipQualityMetrics}`);
+  return response.data;
+};
+
+export const submitAnalysis = async (username: string, skipQualityMetrics: boolean = false) => {
+  const response = await api.post(`/submit/${username}?skip_quality_metrics=${skipQualityMetrics}`);
+  return response.data;
+};
+
+export const getAnalysisStatus = async (analysisId: string) => {
+  const response = await api.get(`/status/${analysisId}`);
+  return response.data;
+};
+
+export const getAnalysisResult = async (analysisId: string) => {
+  const response = await api.get(`/analysis/${analysisId}`);
+  return response.data;
+};
+
 export default api;

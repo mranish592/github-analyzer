@@ -5,29 +5,61 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { submitAnalysis } from '@/api/api';
+import { getAnalysisResult } from '@/api/api';
+import { getAnalysisStatus } from '@/api/api';
 
-// Define interfaces for our data structures
-interface ExperienceItem {
-  language: string;
-  linesOfCode: number;
-  repositories: number;
-  usingSince: string;
+// Update interfaces to match backend models
+interface ExperienceMetrics {
+  lines_of_code: number;
+  first_commit_timestamp: string;
+  last_commit_timestamp: string;
+  repos: string[];
 }
 
-interface CodeQualityItem {
-  language: string;
-  reliabilityRating: string;
-  securityRating: string;
-  maintainabilityRating: string;
-  duplicatedLinesDensity: string;
-  vulnerabilityPerCommit: number;
-  bugsPerCommit: number;
-  codeSmellsPerCommit: number;
+interface QualityMetrics {
+  bugs_per_commit: number | null;
+  code_smells_per_commit: number | null;
+  complexity_per_commit: number | null;
+  vulnerabilities_per_commit: number | null;
+  code_coverage: number | null;
+  duplicated_lines_density: number | null;
+  reliability_rating: string | null;
+  security_rating: string | null;
+  maintainability_rating: string | null;
 }
 
-interface ScanResult {
-  experience: ExperienceItem[];
-  codeQuality: CodeQualityItem[];
+interface OverallExperienceMetrics {
+  skills: Record<string, ExperienceMetrics>;
+}
+
+interface OverallQualityMetrics {
+  skills: Record<string, QualityMetrics>;
+}
+
+interface AnalysisStatus {
+  total_commits: number;
+  analyzed_commits: number;
+  analysis_completed: boolean;
+}
+
+interface AnalyzeResponse {
+  username: string;
+  name: string;
+  message: string;
+  experience_metrics: OverallExperienceMetrics | null;
+  quality_metrics: OverallQualityMetrics | null;
+}
+
+interface SubmitAnalysisResponse {
+  username: string;
+  analysis_id: string;
+  name: string;
+}
+
+interface StatusResponse {
+  analysis_id: string;
+  status: AnalysisStatus;
 }
 
 type ScanType = 'quick' | 'deep';
@@ -36,84 +68,103 @@ export default function GitHubAnalyzer() {
   const [username, setUsername] = useState<string>('');
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
+  const [analysisId, setAnalysisId] = useState<string | null>(null);
+  const [analysisData, setAnalysisData] = useState<AnalyzeResponse | null>(null);
   
-  // Mock data - in a real app this would come from your API
-  const experienceData: ExperienceItem[] = [
-    {
-      language: 'Kotlin',
-      linesOfCode: 400,
-      repositories: 3,
-      usingSince: '1 Month'
-    },
-    {
-      language: 'Python',
-      linesOfCode: 600,
-      repositories: 5,
-      usingSince: '3 Years'
-    },
-    {
-      language: 'FastAPI',
-      linesOfCode: 200,
-      repositories: 2,
-      usingSince: '2 Months'
-    }
-  ];
+  // Convert backend data to UI format for experience tab
+  const experienceData = React.useMemo(() => {
+    if (!analysisData?.experience_metrics) return [];
+    
+    return Object.entries(analysisData.experience_metrics.skills).map(([language, metrics]) => {
+      // Calculate experience duration from first commit to now
+      const firstCommit = new Date(metrics.first_commit_timestamp);
+      const currentDate = new Date();
+      const durationMs = currentDate.getTime() - firstCommit.getTime();
+      const durationDays = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+      
+      let usingSince = '';
+      if (durationDays < 30) {
+        usingSince = durationDays === 1 ? '1 Day' : `${durationDays} Days`;
+      } else if (durationDays < 365) {
+        const months = Math.floor(durationDays / 30);
+        usingSince = months === 1 ? '1 Month' : `${months} Months`;
+      } else {
+        const years = Math.floor(durationDays / 365);
+        usingSince = years === 1 ? '1 Year' : `${years} Years`;
+      }
+      
+      return {
+        language,
+        linesOfCode: metrics.lines_of_code,
+        repositories: metrics.repos.length,
+        usingSince
+      };
+    });
+  }, [analysisData]);
 
-  const codeQualityData: CodeQualityItem[] = [
-    {
-      language: 'Kotlin',
-      reliabilityRating: 'A',
-      securityRating: 'A',
-      maintainabilityRating: 'B',
-      duplicatedLinesDensity: '20%',
-      vulnerabilityPerCommit: 2,
-      bugsPerCommit: 1,
-      codeSmellsPerCommit: 0.5
-    },
-    {
-      language: 'Python',
-      reliabilityRating: 'A',
-      securityRating: 'A',
-      maintainabilityRating: 'B',
-      duplicatedLinesDensity: '20%',
-      vulnerabilityPerCommit: 2,
-      bugsPerCommit: 1,
-      codeSmellsPerCommit: 0.5
-    },
-    {
-      language: 'FastAPI',
-      reliabilityRating: 'A',
-      securityRating: 'A',
-      maintainabilityRating: 'B',
-      duplicatedLinesDensity: '20%',
-      vulnerabilityPerCommit: 2,
-      bugsPerCommit: 1,
-      codeSmellsPerCommit: 0.5
-    }
-  ];
+  // Convert backend data to UI format for code quality tab
+  const codeQualityData = React.useMemo(() => {
+    if (!analysisData?.quality_metrics) return [];
+    
+    return Object.entries(analysisData.quality_metrics.skills).map(([language, metrics]) => {
+      return {
+        language,
+        reliabilityRating: metrics.reliability_rating || 'N/A',
+        securityRating: metrics.security_rating || 'N/A',
+        maintainabilityRating: metrics.maintainability_rating || 'N/A',
+        duplicatedLinesDensity: metrics.duplicated_lines_density ? `${metrics.duplicated_lines_density}%` : 'N/A',
+        vulnerabilityPerCommit: metrics.vulnerabilities_per_commit || 0,
+        bugsPerCommit: metrics.bugs_per_commit || 0,
+        codeSmellsPerCommit: metrics.code_smells_per_commit || 0
+      };
+    });
+  }, [analysisData]);
 
-  const startScan = (type: ScanType): void => {
+  // Poll for analysis status
+  const pollStatus = async (id: string) => {
+    try {
+      const statusResponse = await getAnalysisStatus(id);
+      const { status } = statusResponse;
+      
+      if (status.total_commits > 0) {
+        const newProgress = Math.floor((status.analyzed_commits / status.total_commits) * 100);
+        setProgress(newProgress);
+      }
+      
+      if (status.analysis_completed) {
+        const result = await getAnalysisResult(id);
+        setAnalysisData(result);
+        setIsScanning(false);
+        setProgress(100);
+        return;
+      }
+      
+      // Continue polling if not complete
+      setTimeout(() => pollStatus(id), 2000);
+    } catch (error) {
+      console.error('Error polling status:', error);
+      setIsScanning(false);
+    }
+  };
+
+  const startScan = async (type: ScanType): Promise<void> => {
     setIsScanning(true);
     setProgress(0);
+    setAnalysisData(null);
     
-    // Simulate progress for demonstration
-    const interval = setInterval(() => {
-      setProgress((prevProgress) => {
-        const newProgress = prevProgress + 10;
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          setIsScanning(false);
-          return 100;
-        }
-        return newProgress;
-      });
-    }, 500);
-    
-    // In a real app, you'd call your API here
-    // fetchData(username, type).then((data: ScanResult) => {
-    //   // Process data
-    //   setIsScanning(false);
-    // });
+    try {
+      // Deep scan uses the full analysis, quick scan skips quality metrics
+      const skipQualityMetrics = type === 'quick';
+      
+      const response = await submitAnalysis(username, skipQualityMetrics);
+      setAnalysisId(response.analysis_id);
+      
+      // Start polling for status
+      pollStatus(response.analysis_id);
+    } catch (error) {
+      console.error('Error starting scan:', error);
+      setIsScanning(false);
+    }
   };
 
   const getRatingColor = (rating: string): string => {
