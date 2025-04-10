@@ -47,3 +47,5 @@ uploads/
 
 # secret files
 client_secret_*.json
+
+.scannerwork/

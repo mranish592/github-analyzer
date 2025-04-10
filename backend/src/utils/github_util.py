@@ -39,9 +39,13 @@ class GithubUtil:
         all_commits = list[CommitDetails]()
         # count = 0
         for commit in commits:
+            # skip merge commits, merge commits have more than 1 parent
+            if(len(commit._parents.value) > 1):
+                print('skipping merge commit', commit.sha, commit.commit.message, 'parents', commit._parents.value, len(commit._parents.value))
+                continue
             # print(commit.commit.message, commit.repository.url, commit.sha)
-            # if(commit.repository.full_name != "mranish592/simple-drive"):
-            #     continue
+            if(commit.repository.full_name != "mranish592/simple-drive"):
+                continue
             # count += 1
             # if count > 3:
             #     break
