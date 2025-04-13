@@ -1,11 +1,15 @@
 from pymongo import MongoClient
 from datetime import datetime
 from typing import Optional, Dict, Any, List
+from src.utils.logging_util import logging_util
 
 from core.models import CommitExperienceMetrics, CommitQualityMetrics
 
 class MongoDB:
     def __init__(self, connection_string: str, db_name: str):
+        self.logger = logging_util.get_logger(__name__)
+        self.logger.info(f"Initializing MongoDB connection to database: {db_name}")
+        
         self.client = MongoClient(connection_string)
         self.db = self.client[db_name]
         
@@ -14,17 +18,20 @@ class MongoDB:
         self.commit_quality_metrics = self.db["commit_quality_metrics"]
         
         # Create indexes
+        self.logger.info("Creating indexes for collections")
         self.commit_experience_metrics.create_index("commit_hash")
         self.commit_quality_metrics.create_index("commit_hash")
     
     # Experience Metrics Functions
     def find_commit_experience_metrics(self, commit_hash: str) -> Optional[CommitExperienceMetrics]:
         """Find commit experience metrics by commit hash."""
+        self.logger.debug(f"Finding experience metrics for commit: {commit_hash}")
         result = self.commit_experience_metrics.find_one({
             "commit_hash": commit_hash
         })
         
         if not result:
+            self.logger.debug(f"No experience metrics found for commit: {commit_hash}")
             return None
             
         return CommitExperienceMetrics(

@@ -8,10 +8,11 @@ from config import Config
 from utils.local_git_util import local_git_util
 from utils.github_util import github_util
 import time
+from utils.logging_util import logging_util
 
 class QualityScan:
     def __init__(self):
-        pass
+        self.logger = logging_util.get_logger(__name__)
     
     def analyze_commit_files(self, commit_hash, repo_path):
         """
@@ -53,8 +54,8 @@ class QualityScan:
         )
         
         if result.returncode != 0:
-            print(f"SonarQube scanner failed with exit code {result.returncode}")
-            print(f"Error output:\n{result.stderr}")
+            self.logger.error(f"SonarQube scanner failed with exit code {result.returncode}")
+            self.logger.error(f"Error output:\n{result.stderr}")
             return None, result.stderr
 
         # Extract task ID from the output
@@ -62,12 +63,12 @@ class QualityScan:
         for line in result.stdout.splitlines():
             if "INFO  More about the report processing at" in line:
                 task_id = line.split("id=")[1].strip()
-                print(f"Found task ID: {task_id}")
+                self.logger.info(f"Found task ID: {task_id}")
                 break
 
         if not task_id:
-            print("Could not find task ID in scanner output. Full output:")
-            print(result.stdout)
+            self.logger.error("Could not find task ID in scanner output. Full output:")
+            self.logger.error(result.stdout)
             return None, "Could not find task ID in scanner output"
 
         # Wait for analysis to complete using CE API
@@ -96,18 +97,18 @@ class QualityScan:
                     task_data = response.json()["task"]
                     status = task_data["status"]
                     
-                    print(f"Analysis status: {status} (attempt {attempt + 1}/{max_retries})")
+                    self.logger.info(f"Analysis status: {status} (attempt {attempt + 1}/{max_retries})")
                     
                     if status == "SUCCESS":
                         return True
                     elif status in ["FAILED", "CANCELED"]:
-                        print(f"Analysis failed with status: {status}")
+                        self.logger.error(f"Analysis failed with status: {status}")
                         return False
                     
                 time.sleep(delay)
                 
             except Exception as e:
-                print(f"Error checking task status: {str(e)}")
+                self.logger.error(f"Error checking task status: {str(e)}", exc_info=True)
                 time.sleep(delay)
         
         return False

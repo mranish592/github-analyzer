@@ -1,5 +1,6 @@
 from core.models import CommitDetails, FileInfo
 from utils.framework_detector import framework_detector
+from utils.logging_util import logging_util
 
 extension_to_language = {
     "py": "Python",
@@ -64,7 +65,8 @@ extension_to_language = {
 
 class SkillsUtil:
     def __init__(self):
-        pass
+        self.logger = logging_util.get_logger(__name__)
+        # Replace print statements in initialization
 
     def identify_language(self, file: FileInfo) -> str | None:
         extension = file.file_extension

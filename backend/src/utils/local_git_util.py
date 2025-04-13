@@ -3,12 +3,13 @@ from core.models import CommitDetails, FileInfo
 import git
 import os
 import shutil
+from utils.logging_util import logging_util
 
 EMPTY_TREE_SHA = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
 class LocalGitUtil:
     def __init__(self):
-        pass
+        self.logger = logging_util.get_logger(__name__)
 
     def get_commit_details(self, repo_path, commit_hash, commit_details: CommitDetails) -> CommitDetails | None:
         """
@@ -85,10 +86,10 @@ class LocalGitUtil:
             return commit_details
 
         except git.InvalidGitRepositoryError:
-            print(f"Error: Invalid Git repository at {repo_path}")
+            self.logger.error(f"Error: Invalid Git repository at {repo_path}")
             return None
         except git.BadName:
-            print(f"Error: Invalid commit hash {commit_hash}")
+            self.logger.error(f"Error: Invalid commit hash {commit_hash}")
             return None
         
     def clone_repo(self, repo_url) -> str | None:
@@ -98,14 +99,14 @@ class LocalGitUtil:
         repo_path = repo_url.replace("https://github.com/", base_dir + "/")
         clone_url = repo_url + ".git"
         if os.path.exists(repo_path):
-            print(f"Directory '{repo_path}' already exists. Removing it...")
+            self.logger.info(f"Directory '{repo_path}' already exists. Removing it...")
             try:
                 # Use shutil.rmtree to remove the directory and all its contents
                 shutil.rmtree(repo_path)
-                print(f"Successfully removed directory '{repo_path}'.")
+                self.logger.info(f"Successfully removed directory '{repo_path}'.")
             except OSError as e:
                 # Handle potential errors during removal (e.g., permissions)
-                print(f"Error removing directory '{repo_path}': {e}")
+                self.logger.error(f"Error removing directory '{repo_path}': {e}")
                 return None # Cannot proceed if removal fails
         # --- END MODIFICATION ---
         repo = git.Repo.clone_from(clone_url, repo_path)

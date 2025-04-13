@@ -5,7 +5,11 @@ from pydantic import BaseModel, Field
 from utils.github_util import github_util
 from core.models import AnalyzeResponse, StatusResponse, SubmitAnalysisResponse
 from services.analysis_service import analysis_service
+from utils.logging_util import logging_util
+
 router = APIRouter()
+
+logger = logging_util.get_logger(__name__)
 
 @router.get("/api/analyze/{username}")
 async def analyze(username: str, skip_quality_metrics: bool = False) -> AnalyzeResponse:
@@ -19,8 +23,9 @@ async def analyze(username: str, skip_quality_metrics: bool = False) -> AnalyzeR
 
 @router.post("/api/submit/{username}")
 async def submit_analysis(username: str, skip_quality_metrics: bool = False) -> SubmitAnalysisResponse:
+    logger.info(f"Submitting analysis for username: {username}")
     analysis_id, name = analysis_service.submit_analysis(username, skip_quality_metrics)
-    print('got analysis id for', username, 'with id', analysis_id)
+    logger.info(f'Analysis ID generated for {username}: {analysis_id}')
     return SubmitAnalysisResponse(username=username, analysis_id=analysis_id, name=name)
 
 @router.get("/api/status/{analysis_id}")

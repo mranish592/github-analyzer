@@ -8,9 +8,11 @@ import base64
 
 from typing import Union
 from config import Config
+from utils.logging_util import logging_util
 
 class GithubUtil:
     def __init__(self):
+        self.logger = logging_util.get_logger(__name__)
         # using an access token
         self.auth = Auth.Token(Config.GITHUB_ACCESS_TOKEN)
         self.github = Github(auth=self.auth)
@@ -30,7 +32,8 @@ class GithubUtil:
         return [Config.GITHUB_REPO_BASE_URL + repo.full_name for repo in repos]
     
     def print_rate_limit(self):
-        print("rate_limit", self.github.get_rate_limit())
+        rate_limit = self.github.get_rate_limit()
+        self.logger.info(f"GitHub API rate limit: {rate_limit}")
     
    
     def get_commits_for_user(self, username: str) -> list[RepoDetails]:
@@ -80,6 +83,7 @@ github_util = GithubUtil()
 
 # Example usage:
 if __name__ == "__main__":
+    logger = logging_util.get_logger(__name__)
     github_util = GithubUtil()
     username = "mranish592"
     user = github_util.get_user(username)
@@ -91,15 +95,15 @@ if __name__ == "__main__":
 
     # commits = github_util.get_user_commits(username)
     # for commit in commits:
-    #     print("commit", commit.message)
+    #     logger.info(f"commit {commit.message}")
     #     for file in commit.files:
-    #         print("file :: path", file.path)
-    #         print("file :: language", file.language)
+    #         logger.info(f"file :: path {file.path}")
+    #         logger.info(f"file :: language {file.language}")
     all_commits, repos = github_util.test(username)
-    # print(all_commits)
-    print(repos)
-    print(len(repos))
-    print(len(all_commits))
+    # logger.info(all_commits)
+    logger.info(repos)
+    logger.info(f"Repos count: {len(repos)}")
+    logger.info(f"Commits count: {len(all_commits)}")
     github_util.print_rate_limit()
     github_util.close()
 

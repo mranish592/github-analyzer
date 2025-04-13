@@ -1,4 +1,5 @@
 import logging # Optional: for logging parsing issues
+from utils.logging_util import logging_util
 
 # --- Keyword Definitions (Required for the specified language) ---
 # Define keywords that typically start an import/dependency line
@@ -53,6 +54,7 @@ IMPORT_START_KEYWORDS = {
 class ImportDetector:
     # --- Helper Function for Name Extraction ---
     def __init__(self):
+        self.logger = logging_util.get_logger(__name__)
         pass
 
     def _extract_module_name(self, line, keyword, method):
@@ -181,7 +183,7 @@ class ImportDetector:
         language_keywords = IMPORT_START_KEYWORDS.get(language)
 
         if not language_keywords:
-            # print(f"Warning: Import keywords not defined for language: {language}")
+            self.logger.debug(f"Warning: Import keywords not defined for language: {language}")
             return imports # Return empty set if language rules aren't defined
 
         lines = file_content.splitlines()

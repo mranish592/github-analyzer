@@ -6,6 +6,7 @@ from collections import defaultdict
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from utils.import_detector import import_detector
+from utils.logging_util import logging_util
 
 
 
@@ -253,6 +254,7 @@ class FileInfoFrameworkDetector:
     
     def __init__(self):
         """Initialize the framework detector with TF-IDF vectorizer."""
+        self.logger = logging_util.get_logger(__name__)
         # Prepare corpus for TF-IDF
         self.framework_docs = {}
         

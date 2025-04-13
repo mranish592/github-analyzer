@@ -3,10 +3,12 @@ from config import Config
 from core.models import CommitDetails, CommitExperienceMetrics, CommitQualityMetrics, ExperienceMetrics, OverallExperienceMetrics, OverallQualityMetrics, QualityMetrics
 from utils.quality_scan import quality_scan
 import datetime
+from utils.logging_util import logging_util
 
 
 class MetricsUtil:
     def __init__(self):
+        self.logger = logging_util.get_logger(__name__)
         pass
 
     def get_experience_metrics(self, commit_details: CommitDetails, exclude_files: list) -> CommitExperienceMetrics:
@@ -40,11 +42,11 @@ class MetricsUtil:
     def get_quality_metrics(self, commit_details: CommitDetails, exclude_files: list, repo_path: str) -> CommitQualityMetrics | None:
         success, error = quality_scan.analyze_commit_files(commit_details.hash, repo_path)
         if error:
-            print(error)
+            self.logger.error(error)
             return None
         
         if not success:
-            print("Analysis failed or results not available")
+            self.logger.info("Analysis failed or results not available")
             return None
 
         code_quality_per_file = quality_scan.get_quality_metrics_for_files(Config.BASE_DIR, commit_details.hash, [])
