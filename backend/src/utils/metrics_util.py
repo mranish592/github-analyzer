@@ -38,13 +38,17 @@ class MetricsUtil:
         return experience_metrics
     
     def get_quality_metrics(self, commit_details: CommitDetails, exclude_files: list, repo_path: str) -> CommitQualityMetrics | None:
-        analysis_result, error = quality_scan.analyze_commit_files(commit_details.hash, repo_path)
+        success, error = quality_scan.analyze_commit_files(commit_details.hash, repo_path)
         if error:
             print(error)
             return None
-        # print(analysis_result)
+        
+        if not success:
+            print("Analysis failed or results not available")
+            return None
+
         code_quality_per_file = quality_scan.get_quality_metrics_for_files(Config.BASE_DIR, commit_details.hash, [])
-        # print('code_quality_per_file', code_quality_per_file)
+        
         commit_quality_metrics = CommitQualityMetrics(
             skills=set(),
             timestamp=commit_details.timestamp,
