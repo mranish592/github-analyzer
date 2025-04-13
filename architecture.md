@@ -2,7 +2,7 @@
 
 ## Overview
 
-GitHub Analyzer is a system designed to analyze GitHub profiles by extracting metrics from users' commit history. The architecture follows a client-server model with a clear separation between the frontend user interface and the backend analysis engine.
+GitHub Analyzer is a system designed to analyze GitHub profiles by extracting metrics from users' commit history. 
 
 ### High-Level Architecture
 
@@ -12,99 +12,95 @@ The system consists of:
 2. **Backend**: A FastAPI/Python service that performs the analysis
 3. **External Services**: GitHub API, SonarQube, and MongoDB
 
-## Request Flow
+## API Overview
 
-When a username is received, the following high-level steps are taken:
+The GitHub Analyzer exposes three main API endpoints that work together to process and deliver GitHub profile analysis:
 
-1. **Username Input**
-   - User submits a GitHub username through the frontend
-   - Frontend makes an API call to the backend
+1. **Submit Analysis API**
+   - Endpoint: `/api/submit/{username}`
+   - Purpose: Initiates the analysis process for a given GitHub username
+   - Operation: Fetches basic user information from GitHub and generates a unique analysis ID
+   - Returns: Analysis ID that can be used to track progress and retrieve results
 
-2. **Initial Processing**
-   - Backend receives the request through the `/api/analyze/{username}` or `/api/submit/{username}` endpoint
-   - System fetches basic user information from GitHub API
-   - A unique analysis ID is generated for tracking
+2. **Status API**
+   - Endpoint: `/api/status/{analysis_id}`
+   - Purpose: Checks the progress of an ongoing analysis
+   - Returns: Current status including total commits, analyzed commits, and completion flag
 
-3. **Repository Analysis**
-   - System retrieves the user's repositories 
-   - For each repository, commits are analyzed either synchronously or asynchronously
+3. **Get Analysis Results API**
+   - Endpoint: `/api/analysis/{analysis_id}`
+   - Purpose: Retrieves the completed analysis results
+   - Returns: Comprehensive metrics including experience and quality metrics
+   - Condition: Only returns complete results when analysis is finished
 
-4. **Metrics Extraction**
-   - Each commit is processed to extract:
-     - Experience metrics (languages, frameworks, lines of code)
-     - Quality metrics through SonarQube integration (optional)
-   - Metrics are aggregated across all commits
+This API structure allows for asynchronous processing of potentially lengthy analyses while providing immediate feedback to users.
 
-5. **Result Delivery**
-   - Analyzed data is formatted and returned to the frontend
-   - Results are cached in MongoDB for future requests
-   - Frontend displays visualizations and summaries of the analysis
+## Analysis Flow
 
-## Deep Dive: Architecture Components
+When a username is submitted for analysis, the system performs the following operations:
 
-### Core Services
+### 1. Commit Discovery
+- The system queries the GitHub Search API to extract all commit hashes and repositories associated with the user
+- This provides a comprehensive view of the user's contribution history across all their repositories
 
-The system is organized around several key services:
+### 2. Repository Processing
+For each repository containing user commits:
+- The system clones the repository to the server
+- For each commit:
+  - Checks out the specific commit version
+  - Identifies modified files and their changes
 
-1. **Analysis Service**: Manages the analysis workflow, handling both synchronous and asynchronous analysis requests.
+### 3. Language and Framework Detection
+For each file in a commit:
+- **Language Detection**: Determines the programming language based on file extension
+- **Framework Detection**: 
+  - Extracts import statements from the file
+  - Converts these imports to vectors
+  - Performs cosine similarity analysis against pre-computed framework import patterns
+  - Identifies the most likely frameworks being used based on similarity scores
 
-2. **Ingestion Service**: Responsible for fetching and processing repository data from GitHub.
+### 4. Metrics Collection
+Two primary categories of metrics are collected:
 
-3. **Skill Identification Service**: Analyzes code to identify programming languages and frameworks used.
+#### Experience Metrics
+- Lines of code added per language/framework
+- Timestamp of each commit to track experience duration
+- Repository diversity (number of different repositories worked on)
 
-4. **Metrics Extraction Service**: Calculates statistics like lines of code, contribution frequency, and other metrics.
+#### Quality Metrics
+- Integrates with SonarQube for code quality analysis
+- For each commit:
+  - Runs SonarScanner on the repository at that commit point
+  - Captures quality metrics such as code smells, bugs, and vulnerabilities
+  - Filters results to focus only on files modified in that commit
+  - Aggregates metrics at the file, commit, and overall levels
 
-5. **Scoring Service**: Evaluates the quality and experience metrics to provide insights.
+### 5. Data Storage
+- All collected metrics are stored in MongoDB:
+  - Commit-level metrics are cached to avoid recalculation
+  - Experience metrics are organized by skill (language/framework)
+  - Quality metrics are maintained at file, commit, and overall levels
 
-### Key Components
+## Optimization Strategies
 
-#### GitHub Integration
+The system implements several optimizations to improve performance and efficiency:
 
-The `GithubUtil` class provides an abstraction over the GitHub API, allowing the system to:
-- Fetch user profiles
-- List repositories
-- Access commit history
-- Monitor API rate limits to prevent throttling
+### 1. Commit Filtering
+- PR commits are excluded to focus on substantial contributions
+- Commits without modifications to actual code files are filtered out
+- This reduces the number of commits that need detailed analysis
 
-#### Local Git Operations
+### 2. Caching
+- MongoDB stores results of previously analyzed commits
+- Before analyzing a commit, the system checks if metrics already exist
+- This avoids redundant processing for repeat analyses or when analyzing multiple users with shared commits
 
-The `LocalGitUtil` handles operations that require direct access to git repositories:
-- Cloning repositories
-- Checking out specific commits
-- Extracting file changes between commits
-- Analyzing commit content in detail
+### 3. Selective Quality Analysis
+- Quality analysis (SonarQube scanning) is only performed on modified files
+- This significantly reduces the processing time compared to analyzing entire repositories
 
-#### Framework Detection
-
-The framework detection system identifies technologies used in each file:
-- Maps file extensions to programming languages
-- Uses pattern matching to identify frameworks and libraries
-- Associates skills with each commit and aggregates them
-
-#### Quality Analysis
-
-The `QualityScan` component integrates with SonarQube to perform code quality analysis:
-- Runs SonarScanner on repository snapshots
-- Captures metrics like code smells, bugs, and vulnerabilities
-- Supports both SonarQube server and SonarCloud modes
-
-#### Metrics Aggregation
-
-The `MetricsUtil` aggregates data across multiple commits:
-- Calculates experience duration for each skill
-- Tracks first and last usage of each technology
-- Summarizes lines of code contributions per language and framework
-
-#### Data Persistence
-
-MongoDB is used to store analysis results:
-- Caches commit-level metrics to avoid redundant processing
-- Tracks analysis status for asynchronous operations
-- Enables historical comparison of metrics
-
-### API Endpoints
-
-The FastAPI backend exposes several endpoints:
-- `/api/analyze/{username}`: Performs a synchronous analysis
-- `/api/submit/{username}`: Initiates an asynchronous analysis
-- Status endpoints to track progress of long-running analyses
+### 4. Tiered Metric Storage
+- Metrics are maintained at multiple levels:
+  - File level: Tracking quality per file
+  - Commit level: Aggregating metrics for each commit
+  - Overall level: Providing summary statistics across the user's entire history
