@@ -19,11 +19,11 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && npm --version
 
 # Install SonarScanner for linux x86
-RUN wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-7.0.2.4839-linux.zip \
-    && unzip sonar-scanner-cli-7.0.2.4839-linux.zip \
-    && mv sonar-scanner-7.0.2.4839-linux /opt/sonar-scanner \
+RUN wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-7.0.2.4839-linux-x64.zip \
+    && unzip sonar-scanner-cli-7.0.2.4839-linux-x64.zip \
+    && mv sonar-scanner-7.0.2.4839-linux-x64 /opt/sonar-scanner \
     && ln -s /opt/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner \
-    && rm sonar-scanner-cli-7.0.2.4839-linux.zip
+    && rm sonar-scanner-cli-7.0.2.4839-linux-x64.zip
 
 # # Install SonarScanner for ARM64/aarch64
 # RUN wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-7.0.2.4839-linux-aarch64.zip \
