@@ -17,8 +17,13 @@ class GithubUtil:
         self.auth = Auth.Token(Config.GITHUB_ACCESS_TOKEN)
         self.github = Github(auth=self.auth)
     
-    def get_user(self, username: str) -> NamedUser:
-        return self.github.get_user(username)
+    def get_user(self, username: str) -> Union[NamedUser, AuthenticatedUser, None]:
+        if username is None:
+            return None
+        user =  self.github.get_user(username)
+        if user is None:
+            return None
+        return user
     
     def get_repositories_for_username(self, username: str):
         user = self.github.get_user(username)
@@ -26,9 +31,14 @@ class GithubUtil:
         return [Config.GITHUB_REPO_BASE_URL + repo.full_name for repo in repos]
 
     def get_repositories_for_user(self, user: User):
+        if user is None or user.username is None:
+            return []
+            
         github_user = self.github.get_user(user.username)
         repos = github_user.get_repos()
-        user.name = github_user.name
+        
+        if github_user.name is not None:
+            user.name = github_user.name
         return [Config.GITHUB_REPO_BASE_URL + repo.full_name for repo in repos]
     
     def print_rate_limit(self):
@@ -47,8 +57,8 @@ class GithubUtil:
                 # print('skipping merge commit', commit.sha, commit.commit.message, 'parents', commit._parents.value, len(commit._parents.value))
                 continue
             # print(commit.commit.message, commit.repository.url, commit.sha)
-            # if(commit.repository.full_name != "mranish592/simple-drive"):
-                # continue
+            if(commit.repository.full_name != "mranish592/simple-drive"):
+                continue
             # count += 1
             # if count > 3:
             #     break
@@ -80,31 +90,5 @@ class GithubUtil:
         self.github.close()
         
 github_util = GithubUtil()
-
-# Example usage:
-if __name__ == "__main__":
-    logger = logging_util.get_logger(__name__)
-    github_util = GithubUtil()
-    username = "mranish592"
-    user = github_util.get_user(username)
-    # user = Github(auth=github_util.auth).get_user()
-    # github_util.print_rate_limit()
-    # repos = github_util.get_repositories_for_username(username)
-    github_util.print_rate_limit()
-    # print(repos)
-
-    # commits = github_util.get_user_commits(username)
-    # for commit in commits:
-    #     logger.info(f"commit {commit.message}")
-    #     for file in commit.files:
-    #         logger.info(f"file :: path {file.path}")
-    #         logger.info(f"file :: language {file.language}")
-    all_commits, repos = github_util.test(username)
-    # logger.info(all_commits)
-    logger.info(repos)
-    logger.info(f"Repos count: {len(repos)}")
-    logger.info(f"Commits count: {len(all_commits)}")
-    github_util.print_rate_limit()
-    github_util.close()
 
     

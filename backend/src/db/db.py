@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from src.utils.logging_util import logging_util
+from utils.logging_util import logging_util
 
 from core.models import CommitExperienceMetrics, CommitQualityMetrics
 

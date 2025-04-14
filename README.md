@@ -81,11 +81,11 @@ The project consists of:
    ```bash
    # Start backend
    cd backend
-   uvicorn app.main:app --reload
+   fastapi dev main.py
 
    # Start frontend
    cd frontend
-   npm start
+   npm run dev
    ```
 
 ## API Endpoints
@@ -137,10 +137,3 @@ Experience metrics are calculated based on:
 - Commit frequency and recency
 - Code complexity and quality trends
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-[Your chosen license] 

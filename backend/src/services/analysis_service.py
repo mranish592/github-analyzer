@@ -27,10 +27,13 @@ class AnalysisService:
         self.logger = logging_util.get_logger(__name__)
         self.submissions = {}
 
-    def submit_analysis(self, username: str, skip_quality_metrics: bool = False) -> tuple[str, str]:
+    def submit_analysis(self, username: str, skip_quality_metrics: bool = False) -> tuple[Optional[str], Optional[str]]:
         analysis_id = str(uuid.uuid4())
         self.logger.info(f'Submitting analysis for {username} with ID {analysis_id}')
         user = github_util.get_user(username)
+        if user is None:
+            self.logger.error(f'Failed to get user for {username}')
+            return None, None
         self.logger.info(f'Got user: {user}')
         name = user.name if user.name is not None else username
         self.submissions[analysis_id] = Submission(
@@ -63,10 +66,14 @@ class AnalysisService:
             # You might want to update status to indicate error
             self.submissions[analysis_id].status.analysis_completed = True
     
-    def get_status(self, analysis_id: str) -> AnalysisStatus:
+    def get_status(self, analysis_id: Optional[str]) -> AnalysisStatus:
+        if analysis_id is None or analysis_id not in self.submissions:
+            return AnalysisStatus(total_commits=0, analyzed_commits=0, analysis_completed=True)
         return self.submissions[analysis_id].status
     
-    def get_analysis(self, analysis_id: str):
+    def get_analysis(self, analysis_id: Optional[str]):
+        if analysis_id is None or analysis_id not in self.submissions:
+            return None
         submission = self.submissions[analysis_id]
         return submission
 
@@ -143,20 +150,3 @@ class AnalysisService:
 
 
 analysis_service = AnalysisService()
-
-if __name__ == "__main__":
-    logger = logging_util.get_logger(__name__)
-    analysis_id, name = analysis_service.submit_analysis("mranish592", False)
-    logger.info(f"Analysis ID: {analysis_id}")
-    logger.info(f"Name: {name}")
-    
-    # Wait for analysis to complete
-    import time
-    while not analysis_service.get_status(analysis_id).analysis_completed:
-        logger.info("Waiting for analysis to complete...")
-        time.sleep(5)
-    
-    # Get the results
-    result = analysis_service.get_analysis(analysis_id)
-    logger.info(f"Experience metrics: {result.experience_metrics}")
-    logger.info(f"Quality metrics: {result.quality_metrics}")

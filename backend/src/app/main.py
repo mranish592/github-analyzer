@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.utils.logging_util import logging_util
+from utils.logging_util import logging_util
 
 from .router import root, analyze
 

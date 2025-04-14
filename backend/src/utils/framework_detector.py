@@ -7,22 +7,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from utils.import_detector import import_detector
 from utils.logging_util import logging_util
-
-
-
-
-@dataclass
-class FileInfo:
-    file_path: str
-    file_extension: str
-    line_count: int
-    char_count: int
-    additions: int
-    deletions: int
-    language: Optional[str] = None
-    frameworks: Optional[list[str]] = None
-    content: Optional[str] = None
-
+from core.models import FileInfo
 
 class FileInfoFrameworkDetector:
     """

@@ -68,6 +68,19 @@ class SkillsUtil:
         self.logger = logging_util.get_logger(__name__)
         # Replace print statements in initialization
 
+    def convert_file_info(self, file: FileInfo) -> FileInfo:
+        return FileInfo(
+            file_path=file.file_path,
+            file_extension=file.file_extension,
+            line_count=file.line_count,
+            char_count=file.char_count,
+            additions=file.additions,
+            deletions=file.deletions,
+            language=file.language,
+            frameworks=file.frameworks,
+            content=file.content
+        )
+
     def identify_language(self, file: FileInfo) -> str | None:
         extension = file.file_extension
         return extension_to_language.get(extension.lower(), "Unknown")
@@ -82,8 +95,9 @@ class SkillsUtil:
         
 
         for file in commit_details.files.values():
-            detected_frameworks = framework_detector.process_file_info(file).frameworks
-            if len(detected_frameworks) > 0:
+            detector_file = self.convert_file_info(file)
+            detected_frameworks = framework_detector.process_file_info(detector_file).frameworks
+            if detected_frameworks is not None and len(detected_frameworks) > 0:
                 # print('commit', commit_details.hash, 'file', file.file_path, 'detected_frameworks', detected_frameworks)
                 frameworks.update(detected_frameworks)
                 file.frameworks = detected_frameworks

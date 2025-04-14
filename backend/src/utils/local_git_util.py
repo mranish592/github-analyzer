@@ -73,6 +73,11 @@ class LocalGitUtil:
                 content = content
                 line_count = content.count('\n')
                 char_count = len(content)
+                
+                # Skip if diff.b_path is None
+                if diff.b_path is None:
+                    continue
+                    
                 file_info = FileInfo(
                     file_path=diff.b_path, 
                     file_extension=diff.b_path.split('.')[-1], 
@@ -121,30 +126,3 @@ class LocalGitUtil:
         shutil.rmtree(repo_path)
 
 local_git_util = LocalGitUtil()
-# Example usage (assuming you have cloned the repo):
-if __name__ == "__main__":
-    # repo_path = "/Users/anish/projects/github-analyzer/backend/local_repo_dir/sample"  # Replace with your repo path
-    base_dir = "/Users/anish/projects/github-analyzer/backend/local_repo_dir/base"
-    commit_hash = "cc6010a948eb2dc8d227d21c6ad440e3f83c4017"  # Replace with the commit hash
-    user_name = "mranish592"
-    github_url = f"https://github.com/{user_name}/simple-drive.git"
-    repo_path = github_url.replace("https://github.com/", base_dir + "/").replace(".git", "")
-
-    # commit_data = local_git_util.get_commit_details(repo_path, commit_hash)
-    # if commit_data:
-    #     print(commit_data.id)
-    #     print(commit_data.timestamp)
-    #     print(commit_data.message)
-    #     for file in commit_data.files:
-    #         print(file.path)
-    #         print(file.additions)
-    #         print(file.deletions)
-    #         if file.path == 'backend/simple-drive/src/main/kotlin/Config.kt':
-                # print(file.content)
-    repo = local_git_util.clone_repo("https://github.com/mranish592/simple-drive.git", repo_path)
-    print(repo)
-    repo = local_git_util.checkout_commit(repo_path, commit_hash)
-    print(repo)
-# if commit_data:
-
-    # print(commit_data)

@@ -36,6 +36,9 @@ class LoggingUtil:
         error_file_handler.setFormatter(formatter)
         error_file_handler.setLevel(logging.ERROR)
         root_logger.addHandler(error_file_handler)
+        
+        # Silence watchfiles logger
+        logging.getLogger('watchfiles').setLevel(logging.ERROR)
     
     def get_logger(self, name):
         """Get a logger with the specified name."""

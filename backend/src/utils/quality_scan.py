@@ -77,7 +77,7 @@ class QualityScan:
 
         return True, None
 
-    def _wait_for_task_completion(self, task_id: str, max_retries: int = 5, delay: int = 1) -> bool:
+    def _wait_for_task_completion(self, task_id: str, max_retries: int = 10, delay: int = 1) -> bool:
         """
         Wait for analysis task to complete using CE API
         """
